@@ -1,0 +1,849 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#define N 1000
+
+
+
+
+
+
+//1.将菜品编号设为自动增加
+//2.进行分页浏览 //
+//3.删除时显示所有菜品方便删除//
+//4.输入错误时自动返回且数据不存入 
+
+
+
+
+
+//利用链表储存数据 
+//菜品信息
+struct recipe 
+{
+	char name[50];
+	char food[50];
+	char cooker[50];
+	char style[50];
+	char description[N];
+	int reward;             
+	
+};
+
+typedef struct recipe Recipe;
+//创建链表 
+struct Node
+{
+	int num;
+	Recipe data;
+	struct Node* next;
+};
+struct Node* list=NULL;//使链表为全局变量 
+struct Node* list2=NULL;//放置查询时符合条件的节点
+/*
+创建表头（无数据)
+*/
+struct Node* createHead();
+/*
+ 创建节点：为插入做准备
+ */ 
+struct Node* createNode(Recipe data); 
+/*
+打印链表(从第二个节点打印,创建可移动的指针变量） 
+*/
+void printlist(struct Node* headNode);
+/*
+打印链表当前节点数据 
+*/
+void printlist_Single(struct Node* headNode);
+/*
+表尾插入
+*/
+void insertNode (struct Node* headNode,Recipe data);
+/*
+进行菜品编号更新 
+*/
+void updateNumbers(struct Node* headNode);
+/*
+指定删除,通过字符串比较删除
+*/
+void deleteNodeByName(struct Node* headNode,char* recipename);
+/*
+按好评数升序排序 
+*/ 
+void bubbleSortList_up(struct Node* headNode);
+/*
+按好评数降序排序
+*/
+void bubbleSortList_down(struct Node* headNode);
+/*
+按照食材进行模糊查询 ，用于菜品查询功能  
+*/ 
+void vagueByFood(struct Node* headNode,char* recipefood);
+/*
+按照厨具进行模糊查询 ，用于菜品查询功能  
+*/ 
+void vagueByCooker(struct Node* headNode,char* recipecooker);
+/*
+按照风格查询 ，用于菜品查询功能 
+*/ 
+void searchByStyle(struct Node* headNode,char* recipestyle);
+/*
+查询功能的实现 
+*/ 
+void searchrecipe();
+/*
+按照名称查询，用于修正功能找寻修正目标
+*/ 
+void searchByName(struct Node* headNode,char* recipename);
+/*
+用于判断是否重复输入
+*/
+int searchByName_2(struct Node* headNode,char* recipename);
+/*
+修正功能时调用进行数据修正 
+*/ 
+void  keydownCorrect(int usekey,struct Node* headNode);
+/*
+浏览功能时调用进行菜品按序浏览 
+*/ 
+void  keydownScan(int usekey);
+/*
+用于管理员实现管理功能 
+*/ 
+void  keydownAdmin(int usekey);
+/*
+管理员操作菜单 
+*/ 
+int menuAdmin();
+/*
+用于用户实现用户功能 
+*/ 
+void  keydownUser(int usekey);
+/*
+用户操作菜单 
+*/ 
+int menuUser();
+/*
+主菜单 
+*/
+int mainmenu();
+/*wenjianxie*/
+void writeRecipeToFile(const char* fileName,struct Node* headNode);    
+/**/
+void readRecipeFromFile(const char* fileName,struct Node* headNode);
+
+
+struct Node* createHead()
+{
+	//动态内存申请(申请了一个结构体指针变量内存 
+	struct Node* headNode=(struct Node*)malloc(sizeof(struct Node)); 
+	headNode->next=NULL;//初始化 
+	return headNode;
+ } 
+ 
+struct Node* createNode(Recipe data)
+{
+   //创建节点：为插入做准备，把数据变为结构体变量 
+   struct Node* newNode=(struct Node*)malloc(sizeof(struct Node));	
+   newNode->data=data;//此处存放数据 
+   newNode->num=0;//序号初始化为零 
+   newNode->next=NULL;//初始化 
+   return newNode;
+} 
+ 
+void printlist(struct Node* headNode)
+{
+	//从第二个节点打印,创建可移动的指针变量
+   system("cls");
+   struct Node* pMove=headNode->next;
+   printf("编号   \t名称     \t食材              \t厨具    \t风格     \t\n");
+   printf("------------------------------------------------------------------------------\t\n");	
+   while(pMove)
+   {
+   	printf("%-d\t%-15s\t%-20s\t%-15s\t%-15s\t\n",pMove->num,pMove->data.name,pMove->data.food,pMove->data.cooker,pMove->data.style);
+   	printf("\n");
+	printf("%s\t\n\n好评数:%d\t\n",pMove->data.description,pMove->data.reward);
+	printf("_____________________________________________________________________________\t\n");	
+	printf("\n");//将该节点存放数据打印出来 
+   	pMove=pMove->next;//指针移动至下一节点 直至数据为空 
+   }
+}
+
+void printlist_Single(struct Node* headNode)
+{
+    struct Node* pMove=headNode->next;
+    if(pMove!=NULL)
+	{
+    printf("编号   \t名称     \t食材             \t厨具     \t风格     \t\n");
+   	printf("%-d\t%-15s\t%-20s\t%-15s\t%-15s\t\n",pMove->num,pMove->data.name,pMove->data.food,pMove->data.cooker,pMove->data.style);
+   	printf("\n");
+	printf("%s\t\n\n好评数:%d\t\n",pMove->data.description,pMove->data.reward);
+	printf("____________________________________________________________________________\t\n");	
+	printf("\n");//将该节点存放数据打印出来 
+    }
+    else printf("菜品已经全部显示完毕\n");
+}
+
+void insertNode (struct Node* headNode,Recipe data)
+{
+    struct Node* pMove =headNode;
+    while(pMove->next!=NULL)
+    {
+    	pMove=pMove->next;
+	}
+	struct Node* newNode=createNode(data);
+	pMove->next=newNode;
+}
+
+void updateNumbers(struct Node* headNode)
+{
+    struct Node* temp = headNode;
+    int count = 0;
+    while (temp != NULL) {
+        temp->num = count++;
+        temp = temp->next;
+    }
+}//进行动态排序，使得删除后菜品编号也随之改变 
+
+void deleteNodeByName(struct Node* headNode,char* recipename)
+{
+	//指定删除,通过字符串比较删除 
+	struct Node* posLeftNode=headNode;//删除节点的左边 
+	struct Node* posNode=headNode->next;//删除节点 
+	while(posNode!=NULL&&strcmp(posNode->data.name,recipename))
+	{
+		posLeftNode=posNode;
+		posNode=posLeftNode->next;
+    }
+    if(posNode==NULL)
+    {
+    	printf("未找到该菜品\n");
+    return;
+    }
+    else
+    {
+    	posLeftNode->next=posNode->next;
+    	free(posNode);
+    	posNode=NULL;
+    	printf("删除成功！\n");
+	}
+} 
+
+void vagueByFood(struct Node* headNode,char* recipefood)
+{
+	system("cls");
+	int i,j,k,n; 
+	char Food[50],recipeFood[50];
+	list2=createHead();
+	struct Node* posNode=headNode->next;//查找节点
+	while(posNode)
+    {
+         strcpy(Food,posNode->data.food);
+         strcpy(recipeFood,recipefood);
+         for(i = 0;i<strlen(Food);i+=2)
+         {
+         	for(j = 0;j<strlen(recipeFood);j+=2)
+         	{
+         		if(Food[i] == recipeFood[j]&&Food[i+1] == recipeFood[j+1])
+         		{
+         			k++;
+				 }
+			 }
+		 }
+		 if(k == strlen(recipeFood)/2)
+		{
+		   list2->next=posNode; 
+       	   printlist_Single(list2); 
+    	   printf("您是否满意此菜品？（好评请输入1，否则输入0，输入其他数字则退出查询页面）\n");
+	       while(scanf("%d",&n)!=1)//当输入错误则进入循环重新输入； 
+        	{
+        		getchar();
+                printf("输入错误，请重新输入！\n");
+			}
+	          switch(n)
+	            {
+	               case 1:
+		           list2->next->data.reward++;
+	               printf("好评成功！\n");
+	               printf("___________________\t\n");	
+	               printf("\n");
+	               break;
+	               case 0: 
+		           printf("我们会继续努力；；\n");
+		           printf("___________________\t\n");	
+		           printf("\n");
+		           break;
+		           default :
+		           return;
+	           }
+		}
+		k=0;
+		 posNode=posNode->next;	
+	}
+	printf("未找到更多菜品\n");
+}
+void vagueByCooker(struct Node* headNode,char* recipecooker)
+{
+	system("cls");
+	int i,j,k,n; 
+	char Cooker[50],recipeCooker[50];
+	list2=createHead();
+	struct Node* posNode=headNode->next;//查找节点
+	while(posNode)
+    {
+         strcpy(Cooker,posNode->data.cooker);
+         strcpy(recipeCooker,recipecooker);
+         for(i = 0;i<strlen(Cooker);i+=2)
+         {
+         	for(j = 0;j<strlen(recipeCooker);j+=2)
+         	{
+         		if(Cooker[i] == recipeCooker[j]&&Cooker[i+1] == recipeCooker[j+1])
+         		{
+         			k++;
+				 }
+			 }
+		 }
+		 if(k == strlen(recipeCooker)/2)
+		{
+		   list2->next=posNode; 
+       	   printlist_Single(list2); 
+    	   printf("您是否满意此菜品？（好评请输入1，否则输入0，输入其他数字则退出查询页面）\n");
+	       while(scanf("%d",&n)!=1)//当输入错误则进入循环重新输入； 
+        	{
+        		getchar();
+                printf("输入错误，请重新输入！\n");
+            }
+	          switch(n)
+	            {
+	               case 1:
+		           list2->next->data.reward++;
+	               printf("好评成功！\n");
+	               printf("___________________\t\n");	
+	               printf("\n");
+	               
+	               break;
+	               case 0: 
+		       
+		           printf("我们会继续努力；；\n");
+		           printf("___________________\t\n");	
+		           printf("\n");
+		           break;
+		           default :
+		           return;
+	           }
+		}
+		k=0;
+		posNode=posNode->next;	
+	}
+	printf("未找到更多菜品\n");
+}
+
+
+void searchByStyle(struct Node* headNode,char* recipestyle)
+{
+	system("cls");
+    int n; 
+	list2=createHead();
+	struct Node* posNode=headNode->next;//查找节点
+	while(1)
+	{
+	       while(posNode!=NULL&&strcmp(posNode->data.style,recipestyle))
+	       {
+	        	posNode=posNode->next;
+           }//继续往下 
+           if(posNode==NULL)
+           {
+                printf("未找到更多符合菜品\n");
+                return;
+           }
+           else
+           {
+	            list2->next=posNode; 
+            	printlist_Single(list2); 
+    	        posNode=posNode->next;
+    	        printf("您是否满意此菜品？（好评请输入1，否则输入0，输入其他数字则退出查询页面）\n");
+	            while(scanf("%d",&n)!=1)//当输入错误则进入循环重新输入； 
+             	{
+        		getchar();
+                printf("输入错误，请重新输入！\n");
+                }
+	            switch(n)
+	            {
+	               case 1:
+		           list2->next->data.reward++;
+	               printf("好评成功！\n");
+	               printf("\n");
+	               break;
+	               case 0: 
+		       
+		           printf("我们会继续努力；；\n");
+		           printf("\n");
+		           break;
+		           default :
+		           return;
+	           }
+	       } 
+    }
+} 
+void searchByName(struct Node* headNode,char* recipename)
+{
+    int n; 
+	list2=createHead();
+	struct Node* posNode=headNode->next;//查找节点
+	while(posNode!=NULL&&strcmp(posNode->data.name,recipename))
+	{
+		posNode=posNode->next;
+    }//继续往下 
+    if(posNode==NULL)
+    {
+    printf("未找到符合菜品\n");
+    return;
+    }
+    else
+    {
+	    list2->next=posNode; 
+    	printlist_Single(list2); 
+    	printf("请选择想要修正的部分：\n");
+    	printf("____________________________\t\n");	
+        printf("____________________________\t\n");	
+	    printf("*1\t名称\n");
+	    printf("*2\t食材\n");
+	    printf("*3\t厨具\n");
+	    printf("*4\t风格\n");
+	    printf("*5\t描述\n");
+	    printf("*6\t好评数\n");
+    	printf("*0\t退出\n");	
+        printf("____________________________\n");
+        printf("____________________________\n");
+    	scanf("%d",&n);
+    	keydownCorrect(n,list2->next);
+    	posNode=posNode->next;
+	} 
+} 
+int searchByName_2(struct Node* headNode,char* recipename)
+{
+	struct Node* posNode=headNode->next;//查找节点
+	while(posNode!=NULL&&strcmp(posNode->data.name,recipename))
+	{
+		posNode=posNode->next;
+    }//继续往下 
+    if(posNode==NULL)
+    {
+    return 1;
+    }
+    else
+    {
+	    return 0;
+	} 
+} 
+void  keydownCorrect(int usekey,struct Node* headNode)
+{
+	switch(usekey)
+	{
+	case 0://退出 
+	    printf("退出成功\n");
+	    system("cls");
+	    //退出到用户选择身份界面
+		break;
+	case 1:// 名称 
+    	printf("请输入修正内容：\n");
+	    scanf("%s",headNode->data.name);
+	    printf("修正成功！\n");	    	
+	    break;
+	case 2://食材 
+    	printf("请输入修正内容：\n");
+	    scanf("%s",headNode->data.food);
+	    printf("修正成功！\n");	    	
+	    break;
+    case 3://厨具 
+    	printf("请输入修正内容：\n");
+	    scanf("%s",headNode->data.cooker);
+	    printf("修正成功！\n");	    	
+	    break;
+	case 4://风格 
+    	printf("请输入修正内容：\n");
+	    scanf("%s",headNode->data.style);
+	    printf("修正成功！\n");	    	
+	    break;
+	case 5://描述 
+    	printf("请输入修正内容：\n");
+	    scanf("%s",headNode->data.description);
+	    printf("修正成功！\n");	    	
+	    break;
+	case 6://好评数 
+    	printf("请输入修正内容：\n");
+	    scanf("%d",&headNode->data.reward);
+	    printf("修正成功！\n");	    	
+	    break;  
+	default:
+	    printf("【输入错误】\n"); 
+	    break;
+	} 
+}
+
+void  keydownScan(int usekey)
+{
+	switch(usekey)
+	{ 
+	case 1://好评数降序 
+	    bubbleSortList_down(list);
+	    break; 
+	case 2://好评数升序 
+        bubbleSortList_up(list);	    	
+	    break;
+	default:
+	    printf("【输入错误】\n"); 
+	    break;
+	} 
+}
+//升序排序
+void bubbleSortList_up(struct Node* headNode)
+{
+	struct Node* p=headNode->next;
+	while(p!=NULL)
+	{
+		struct Node* q=headNode->next;
+		while(q->next!=NULL)
+		{
+			if(q->data.reward >q->next->data.reward)
+			{
+				Recipe tempdata=q->data;
+				q->data=q->next->data;
+				q->next->data=tempdata;
+			}
+			q=q->next;
+		}
+		p=p->next;
+	}
+	printlist(headNode);
+} 
+//降序排序
+void bubbleSortList_down(struct Node* headNode)
+{
+	struct Node* p=headNode->next;
+	while(p!=NULL)
+	{
+		struct Node* q=headNode->next;
+		while(q->next!=NULL)
+		{
+			if(q->data.reward < q->next->data.reward)
+			{
+				Recipe tempdata=q->data;
+				q->data=q->next->data;
+				q->next->data=tempdata;
+			}
+			q=q->next;
+		}
+		p=p->next;
+	}
+	printlist(headNode);
+} 
+//查询 
+void searchrecipe()
+{   int n;
+    Recipe temprecipe2;
+    printf("请输入选项：\n");
+    scanf("%d",&n);	
+    switch(n)
+    {
+    	case 1://食材
+    	printf("请输入想要查询的食材：\t\n");
+    	scanf("%s",temprecipe2.food);
+		vagueByFood(list,temprecipe2.food);
+    		break;
+    	case 2://厨具 
+    	printf("请输入想要查询的厨具：\t\n");
+    	scanf("%s",temprecipe2.cooker);
+		vagueByCooker(list,temprecipe2.cooker);
+    		break;
+    	case 3://风格 
+    	printf("请输入想要查询的风格：\t\n");
+    	scanf("%s",temprecipe2.style);
+		searchByStyle(list,temprecipe2.style); 
+    		break;
+    	case 0://退出 
+    	    printf("退出成功\n");
+	        break;
+    	default:
+    		printf("输入错误\n");
+    		break;
+	}
+	    
+}
+
+int mainmenu()
+{
+	int n;
+	printf("欢迎使用酱料女皇！\t\n");
+	printf("\n");
+    printf("         酱料女皇\t\n");
+    printf("____________________________\t\n");	
+    printf("____________________________\t\n");	
+    printf("请选择你的身份：\n");
+    printf("*0\t 管理员\n");
+	printf("*1\t 用户\n");
+    printf("____________________________\n");
+    printf("____________________________\n");
+    printf("请输入选项：\n");
+    scanf("%d",&n);
+    return n;
+} 
+
+int menuAdmin()
+{
+	int n;
+    printf("         酱料女皇\t \n");
+    printf("____________________________\t\n");	
+    printf("____________________________\t\n");	
+    printf("*1\t 菜品查询\n");
+    printf("*2\t 菜品输入\n");
+	printf("*3\t 菜品删除\n");
+	printf("*4\t 菜品一览\n");
+	printf("*5\t 菜品修正\n");
+	printf("*0\t 退出\n");	
+    printf("____________________________\n");
+    printf("____________________________\n");
+    printf("请输入选项：\n");
+    scanf("%d",&n);
+    return n;
+}
+/*按键交互*/
+void  keydownAdmin(int usekey)
+{
+	int n,i=0;
+	
+	Recipe temprecipe;//建立临时菜品信息存放处 
+	switch(usekey)
+	{
+	case 0://退出 
+	    printf("退出成功\n");
+	    system("cls");
+	    return;
+	    //退出到用户选择身份界面(?) 
+		break;
+	case 1://查询
+	    system("cls");
+	    printf("【查询】\n");
+	    printf("请选择您的查询方式：\n");
+	    printf("____________________________\t\n");	
+        printf("____________________________\t\n");	
+        printf("*1\t 食材查询\n");
+	    printf("*2\t 厨具查询\n");
+	    printf("*3\t 风格查询\n");
+    	printf("*0\t 退出\n");	
+        printf("____________________________\n");
+        printf("____________________________\n");
+        searchrecipe(); 
+	    break; 
+	case 2://输入
+    	system("cls");
+        do
+        {
+	    printf("【输入】\n");
+	    printf("请输入菜品信息（名称、食材、厨具、风格、描述、好评数）\n");
+	    scanf("%s%s%s%s%s",temprecipe.name,temprecipe.food,temprecipe.cooker,temprecipe.style,temprecipe.description);
+	    while(scanf("%d",&temprecipe.reward)!=1)//当输入好评错误则进入循环重新输入； 
+        	{
+        		getchar();
+                printf("好评数输入错误，请重新输入好评数！\n");
+			}
+		i=searchByName_2(list,temprecipe.name);
+		if(i)
+		
+        {
+        printf("输入成功！\n");
+		break;
+        }
+        else
+		{
+			 printf("菜品重复，请重新输入菜品信息！\n");
+			 system("pause");
+			 system("cls");
+		} 
+        }while(1); 
+	    insertNode(list,temprecipe);
+	    updateNumbers(list);
+	    writeRecipeToFile("recipeInfo.txt",list);
+		break; 
+	case 3://删除
+	    system("cls");
+	    printf("【删除】\n");
+	    printf("请输入需删除的菜品名称：\n");
+	    scanf("%s",temprecipe.name);
+	    deleteNodeByName(list,temprecipe.name);
+	    updateNumbers(list);
+	    writeRecipeToFile("recipeInfo.txt",list);
+	    break; 
+	case 4://浏览
+	    system("cls"); 
+	    printf("【总览】\n");
+	    printf("请选择排序方式：\n");
+	    printf("____________________________\t\n");	
+        printf("____________________________\t\n");	
+	    printf("*1\t 按好评数降序排序\n");
+		printf("*2\t 按好评数升序排序\n");	
+        printf("____________________________\n");
+        printf("____________________________\n");
+        scanf("%d",&n);
+        keydownScan(n); 
+	    break;
+    case 5://修正 
+        system("cls");
+	    printf("【修正】\n");
+	    printf("请输入想要修正的菜品名称：\n");
+	    scanf("%s",temprecipe.name);
+	    searchByName(list,temprecipe.name);
+	    writeRecipeToFile("recipeInfo.txt",list);
+	    break;
+	default:
+	    printf("【输入错误】\n"); 
+	    break;
+	} 
+}
+
+int menuUser()
+{
+	int n;
+    printf("         酱料女皇\t \n");
+    printf("____________________________\t\n");	
+    printf("____________________________\t\n");	
+    printf("*1\t 菜品查询\n");
+	printf("*2\t 菜品一览\n");
+	printf("*0\t 退出\n");	
+    printf("____________________________\n");
+    printf("____________________________\n");
+    printf("请输入选项：\n");
+    scanf("%d",&n);
+    return n;
+}
+
+void  keydownUser(int usekey)
+{
+	int n; 
+	switch(usekey)
+	{
+	case 0://退出 
+	    printf("退出成功\n");
+	    system("cls");
+	    //退出到用户选择身份界面
+		break;
+	case 1://查询
+	    system("cls");
+	    printf("【查询】\n");
+	    printf("请选择您的查询方式：\n");
+	    printf("____________________________\t\n");	
+        printf("____________________________\t\n");	
+        printf("*1\t 食材查询\n");
+	    printf("*2\t 厨具查询\n");
+	    printf("*3\t 风格查询\n");
+    	printf("*0\t 退出\n");	
+        printf("____________________________\n");
+        printf("____________________________\n");
+        searchrecipe(); 
+	    break; 
+	case 2:
+		system("cls");
+    	printf("【总览】\n");	    	
+		printf("请选择排序方式：\n");
+	    printf("____________________________\t\n");	
+        printf("____________________________\t\n");	
+	    printf("*1\t 按好评数降序排序\n");
+		printf("*2\t 按好评数升序排序\n");	
+        printf("____________________________\n");
+        printf("____________________________\n");
+        scanf("%d",&n);
+        keydownScan(n); 
+	    break;
+	default:
+	    printf("【输入错误】\n"); 
+	    break;
+	} 
+}
+
+
+void writeRecipeToFile(const char* fileName,struct Node* headNode)                 
+{
+	FILE* file=fopen(fileName,"w");
+	struct Node* pMove=headNode->next;
+	if (file == NULL) 
+	{
+        printf("无法打开文件\n");
+        return;
+    }
+	while(pMove!=NULL)
+	{
+		fprintf(file,"%d\t%s\t%s\t%s\t%s\t%s\t%d\t\n",pMove->num,pMove->data.name,pMove->data.food,pMove->data.cooker,pMove->data.style,pMove->data.description,pMove->data.reward);//以自定义方式存放数据 
+	    pMove=pMove->next;
+	}
+	fclose(file);
+}
+
+void readRecipeFromFile(const char* fileName,struct Node* headNode) 
+{
+    FILE *file = fopen(fileName, "r");
+    if (file == NULL) 
+	{
+		file=fopen(fileName,"w+");
+        // 如果文件不存在，则创建文件 
+    }
+    Recipe tempData;
+    while (fscanf(file, "%d\t%s\t%s\t%s\t%s\t%s\t%d\t\n",&headNode->num,tempData.name,tempData.food,tempData.cooker,tempData.style,tempData.description,&tempData.reward)!= EOF)//怎么写入怎么读入 
+	{
+        insertNode(headNode,tempData);
+        updateNumbers(headNode);
+    }
+    fclose(file);
+}
+
+#define PAGE_SIZE 10 // 每页显示的菜谱数量
+
+void displayRecipesPerPage(FILE *file, int page) {
+    char recipe[100]; // 假设每个菜谱信息不超过100个字符
+    int count = 0;
+    int line = 0;
+
+    fseek(file, 0, SEEK_SET); // 将文件指针设置到文件开头
+
+    while (fgets(recipe, sizeof(recipe), file) != NULL) {
+        if (line >= (page - 1) * PAGE_SIZE && line < page * PAGE_SIZE) {
+            printf("%s", recipe);
+        }
+        line++;
+    }
+}
+
+
+
+int main()
+{
+	int usekey1,usekey2; 
+	list=createHead();
+	readRecipeFromFile("recipeInfo.txt",list);
+	while(1)
+	{
+	usekey1=mainmenu();//进行身份选择 
+	system("cls");
+	if(usekey1==0)//身份为管理员 
+	while(1)
+	{
+	usekey2=menuAdmin();//进入管理员页面选择功能 
+	keydownAdmin(usekey2);
+	if(usekey2==0) break;
+	system("pause");//暂停批文件的处理并显示消息 
+	system("cls");//清屏 
+	} 
+	else if(usekey1==1)
+	while(1)
+	{
+	usekey2=menuUser();
+	keydownUser(usekey2);
+	if(usekey2==0) break;
+	system("pause");//暂停批文件的处理并显示消息 
+	system("cls");//清屏 
+	}
+	else printf("输入错误\n"); 
+	system("cls");
+    }
+}
+   
